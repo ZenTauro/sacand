@@ -1,0 +1,8 @@
+[package]
+name = "sacand"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+notify-rust = "4.5.5"
+alsa = "0.6.0"
