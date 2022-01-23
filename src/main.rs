@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use std::fs;
 
 use alsa::{self, mixer::SelemChannelId};
-use notify_rust::{Notification, NotificationHandle};
+use notify_rust::{Notification, NotificationHandle, Hint};
 use directories::BaseDirs;
 
 fn main() {
@@ -64,7 +64,10 @@ fn handle_conn(mut stream: UnixStream, notification: &mut Option<NotificationHan
     let new_vol = match parse_msg(&msg) {
         Msg::Nop => vol,
         Msg::Inc(inc) => {
-            let new_vol = vol + (inc as f64);
+            let mut new_vol = vol + (inc as f64);
+            if new_vol > 100.0 {
+                new_vol = 100.0
+            }
             selem.set_playback_volume_all(
                 pct_to_vol(new_vol, vmax)
             ).expect(&format!("Failed to increment value from {}% to {}%", vol, new_vol));
@@ -73,7 +76,10 @@ fn handle_conn(mut stream: UnixStream, notification: &mut Option<NotificationHan
             new_vol
         },
         Msg::Dec(dec) => {
-            let new_vol = vol - (dec as f64);
+            let mut new_vol = vol - (dec as f64);
+            if new_vol < 0.0 {
+                new_vol = 0.0
+            }
             selem.set_playback_volume_all(
                 pct_to_vol(new_vol, vmax)
             ).expect(&format!("Failed to decrement value from {}% to {}%", vol, new_vol));
@@ -85,12 +91,14 @@ fn handle_conn(mut stream: UnixStream, notification: &mut Option<NotificationHan
 
     match notification {
         Some(notification_handle) => {
-            notification_handle.summary(&format!("{new_vol}%"));
+            notification_handle.summary(&format!("{new_vol:.0}%"))
+                .hint(Hint::CustomInt("value".to_string(), new_vol as i32));
             notification_handle.update();
         },
         None => {
             let handle = Notification::new()
-                .summary(&format!("{new_vol}%"))
+                .summary(&format!("{new_vol:.0}%"))
+                .hint(Hint::CustomInt("value".to_string(), new_vol as i32))
                 .show()
                 .unwrap();
             *notification = Some(handle);
