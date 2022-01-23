@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 notify-rust = "4.5.5"
 alsa = "0.6.0"
+directories = "4.0"
+ctrlc = "3.2.1"
